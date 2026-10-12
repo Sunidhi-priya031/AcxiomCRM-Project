@@ -1,0 +1,57 @@
+@model PipelineViewModel
+@{
+    ViewData["Title"] = "Sales Pipeline";
+}
+<div class="page-header">
+    <div>
+        <h1>Sales pipeline</h1>
+        <div class="subtitle">Open opportunities: @Money(Model.TotalAmount) total · @Money(Model.TotalWeighted) weighted (Amount × Probability / 100)</div>
+    </div>
+    <form method="get" class="d-flex align-items-end gap-2">
+        <div>
+            <label class="form-label small mb-1" for="assignedTo">Owner</label>
+            <select id="assignedTo" name="assignedTo" class="form-select form-select-sm" data-autosubmit style="min-width: 180px">
+                <option value="">All owners</option>
+                @foreach (var u in Model.Owners)
+                {
+                    <option value="@u.Id" selected="@(Model.AssignedTo == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <noscript><button type="submit" class="btn btn-sm btn-primary">Apply</button></noscript>
+        <a asp-action="Create" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New opportunity</a>
+    </form>
+</div>
+
+<div class="pipeline-board">
+    @foreach (var col in Model.Columns)
+    {
+        <section class="pipeline-column" aria-labelledby="stage-@col.Stage">
+            <div class="d-flex justify-content-between align-items-baseline">
+                <h2 id="stage-@col.Stage">@col.Stage <span class="text-body-secondary fw-normal">(@col.Items.Count)</span></h2>
+                <span class="small fw-semibold">@Money(col.Amount)</span>
+            </div>
+            <div class="small text-body-secondary">Weighted @Money(col.Weighted)</div>
+            @if (col.Items.Count == 0)
+            {
+                <div class="small text-body-secondary mt-3">No opportunities in this stage.</div>
+            }
+            @foreach (var o in col.Items)
+            {
+                <a class="pipeline-card" asp-action="Details" asp-route-id="@o.OpportunityId">
+                    <div class="fw-medium">@o.OpportunityName</div>
+                    <div class="small text-body-secondary">@o.Customer?.CustomerName</div>
+                    <div class="d-flex justify-content-between small mt-2">
+                        <span class="fw-semibold">@Money(o.Amount)</span>
+                        <span>@o.Probability%</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-body-secondary mt-1">
+                        <span>@o.AssignedToUser?.FullName</span>
+                        <span class="@(o.ExpectedCloseDate < DateTime.Today ? "text-danger" : "")">Close @o.ExpectedCloseDate.ToString("dd MMM")</span>
+                    </div>
+                </a>
+            }
+        </section>
+    }
+</div>
+<p class="small text-body-secondary mt-3">Won and lost opportunities are listed on the <a asp-action="Index" asp-route-status="Won">opportunity list</a> and in the <a asp-controller="Reports" asp-action="Pipeline">pipeline report</a>.</p>

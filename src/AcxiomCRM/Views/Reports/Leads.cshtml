@@ -1,0 +1,55 @@
+@model ReportPage<LeadReportRow>
+@{
+    ViewData["Title"] = Model.Title;
+    var header = new ReportHeaderView
+    {
+        Title = Model.Title,
+        Description = Model.Description,
+        Summary = Model.Summary,
+        Exports = { ("Export CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["page"] = null })) }
+    };
+    var filters = new ReportFilterView
+    {
+        Filter = Model.Filter,
+        Owners = Model.Owners,
+        Statuses = Enum.GetNames<LeadStatus>(),
+        Sources = Enum.GetNames<LeadSource>()
+    };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr>
+                    <th>Code</th><th>@Html.SortLink("Lead", "name")</th><th>Company</th><th>@Html.SortLink("Source", "source")</th>
+                    <th>@Html.SortLink("Status", "status")</th><th>Priority</th><th>Owner</th><th class="text-end">@Html.SortLink("Expected value", "value")</th>
+                    <th>@Html.SortLink("Created", "created")</th><th>Converted</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows.Items)
+                {
+                    <tr>
+                        <td class="text-body-secondary">@r.Code</td>
+                        <td><a asp-controller="Leads" asp-action="Details" asp-route-id="@r.Id">@r.Name</a></td>
+                        <td>@(r.Company ?? "-")</td>
+                        <td>@r.Source</td>
+                        <td>@StatusBadge(r.Status)</td>
+                        <td>@r.Priority</td>
+                        <td>@r.Owner</td>
+                        <td class="text-end">@Money(r.ExpectedValue)</td>
+                        <td class="text-nowrap">@Date(r.CreatedDate)</td>
+                        <td>@(r.Converted ? Date(r.ConvertedDate) : "No")</td>
+                    </tr>
+                }
+                @if (Model.Rows.TotalCount == 0)
+                {
+                    <tr><td colspan="10" class="empty-state">No leads match the filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Rows, "leads")" />
+</div>

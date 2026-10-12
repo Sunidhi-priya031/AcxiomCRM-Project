@@ -1,0 +1,27 @@
+@model Activity
+@{
+    ViewData["Title"] = "Delete activity";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Activities</a></li><li class="breadcrumb-item active" aria-current="page">Delete</li></ol></nav>
+        <h1>Delete activity</h1>
+    </div>
+</div>
+<div class="card" style="max-width: 640px">
+    <div class="card-body">
+        <dl class="detail-list mb-3">
+            <dt>Activity</dt><dd>@Model.ActivityType – @Model.Subject</dd>
+            <dt>Date</dt><dd>@DateTimeText(Model.ActivityDate)</dd>
+            <dt>Related to</dt><dd>@(Model.Customer?.CustomerName ?? Model.Lead?.LeadName)</dd>
+            <dt>Status</dt><dd>@StatusBadge(Model.Status)</dd>
+        </dl>
+        <div class="alert alert-danger small mb-0" role="alert">The activity will be permanently deleted. This cannot be undone.</div>
+    </div>
+    <form asp-action="Delete" asp-route-id="@Model.ActivityId" method="post" data-confirm="Permanently delete this activity?" data-confirm-button="Delete">
+        <div class="form-actions">
+            <a asp-action="Index" class="btn btn-light border">Cancel</a>
+            <button type="submit" class="btn btn-danger">Delete activity</button>
+        </div>
+    </form>
+</div>

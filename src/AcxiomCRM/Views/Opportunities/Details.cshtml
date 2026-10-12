@@ -1,0 +1,158 @@
+@model OpportunityDetailsViewModel
+@{
+    var o = Model.Opportunity;
+    ViewData["Title"] = o.OpportunityName;
+    var stages = OpportunityWorkflow.OpenStages;
+    var stageIndex = Array.IndexOf(stages, o.Stage);
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Opportunities</a></li><li class="breadcrumb-item active" aria-current="page">Details</li></ol></nav>
+        <h1>@o.OpportunityName <span class="ms-1 align-middle">@StatusBadge(o.Stage)</span></h1>
+        <div class="subtitle"><a asp-controller="Customers" asp-action="Details" asp-route-id="@o.CustomerId">@o.Customer?.CustomerName</a> · Owner: @o.AssignedToUser?.FullName</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (o.IsOpen)
+        {
+            <a asp-controller="FollowUps" asp-action="Create" asp-route-opportunityId="@o.OpportunityId" class="btn btn-light border"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Schedule follow-up</a>
+            <a asp-action="Edit" asp-route-id="@o.OpportunityId" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+        }
+        @if (Model.CanDelete)
+        {
+            <a asp-action="Delete" asp-route-id="@o.OpportunityId" class="btn btn-outline-danger"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</a>
+        }
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-3 d-flex flex-wrap align-items-center gap-2 small" aria-label="Pipeline stage">
+        @for (var i = 0; i < stages.Length; i++)
+        {
+            var reached = !o.IsOpen || i <= stageIndex;
+            <span class="badge @(reached ? "badge-soft-primary" : "badge-soft-secondary") px-2 py-2">@stages[i]</span>
+            <i class="bi bi-chevron-right text-body-tertiary" aria-hidden="true"></i>
+        }
+        <span class="badge @(o.Status == OpportunityStatus.Won ? "badge-soft-success" : o.Status == OpportunityStatus.Lost ? "badge-soft-danger" : "badge-soft-secondary") px-2 py-2">@(o.IsOpen ? "Won / Lost" : o.Status.ToString())</span>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card mb-3">
+            <div class="card-header">Opportunity details</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Amount</dt><dd class="fw-semibold">@Money(o.Amount)</dd>
+                    <dt>Probability</dt><dd>@o.Probability%</dd>
+                    <dt>Weighted amount</dt><dd>@Money(o.WeightedAmount) <span class="text-body-secondary small">(Amount × Probability / 100)</span></dd>
+                    <dt>Expected close</dt><dd class="@(o.IsOpen && o.ExpectedCloseDate < DateTime.Today ? "text-danger" : "")">@Date(o.ExpectedCloseDate)</dd>
+                    <dt>Status</dt><dd>@StatusBadge(o.Status)</dd>
+                    @if (o.ClosedDate.HasValue)
+                    {
+                        <dt>Closed</dt><dd>@DateTimeText(o.ClosedDate)</dd>
+                    }
+                    <dt>Customer</dt><dd><a asp-controller="Customers" asp-action="Details" asp-route-id="@o.CustomerId">@o.Customer?.CustomerName</a></dd>
+                    <dt>Lead</dt><dd>@if (o.Lead != null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@o.LeadId">@o.Lead.LeadName (@o.Lead.LeadCode)</a> } else { <span>-</span> }</dd>
+                    <dt>Source</dt><dd>@(o.Source?.GetDisplayName() ?? "-")</dd>
+                    <dt>Owner</dt><dd>@o.AssignedToUser?.FullName</dd>
+                    <dt>Created</dt><dd>@DateTimeText(o.CreatedDate) by @o.CreatedByUser?.FullName</dd>
+                </dl>
+                @if (!string.IsNullOrEmpty(o.Notes))
+                {
+                    <hr />
+                    <div class="small text-body-secondary mb-1">Notes</div>
+                    <p class="mb-0" style="white-space: pre-line">@o.Notes</p>
+                }
+            </div>
+        </div>
+
+        @if (o.IsOpen)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Close opportunity</div>
+                <div class="card-body">
+                    <p class="small text-body-secondary">Record the final outcome. Won sets probability to 100%, Lost to 0%.</p>
+                    <form asp-action="Close" asp-route-id="@o.OpportunityId" method="post" class="mb-0" id="closeForm">
+                        <label for="remarks" class="form-label small">Outcome remarks (optional)</label>
+                        <textarea id="remarks" name="remarks" class="form-control mb-3" rows="2" maxlength="500"></textarea>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="outcome" value="Won" class="btn btn-success flex-fill"
+                                    onclick="this.form.dataset.confirm='Mark this opportunity as Won?';this.form.dataset.confirmButton='Mark Won';this.form.dataset.confirmStyle='btn-success';">
+                                <i class="bi bi-trophy me-1" aria-hidden="true"></i>Mark Won
+                            </button>
+                            <button type="submit" name="outcome" value="Lost" class="btn btn-outline-danger flex-fill"
+                                    onclick="this.form.dataset.confirm='Mark this opportunity as Lost?';this.form.dataset.confirmButton='Mark Lost';this.form.dataset.confirmStyle='btn-danger';">
+                                <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Mark Lost
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-xl-7">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Follow-ups (@Model.FollowUps.Count)</span>
+                @if (o.IsOpen)
+                {
+                    <a asp-controller="FollowUps" asp-action="Create" asp-route-opportunityId="@o.OpportunityId" class="small fw-normal">Schedule</a>
+                }
+            </div>
+            @if (Model.FollowUps.Count == 0)
+            {
+                <div class="empty-state py-4">No follow-ups.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-crm">
+                        <thead><tr><th>Date</th><th>Subject</th><th>Status</th><th>Owner</th></tr></thead>
+                        <tbody>
+                            @foreach (var f in Model.FollowUps)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@DateTimeText(f.FollowUpDate)</td>
+                                    <td><a asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.FollowUpId">@f.Subject</a></td>
+                                    <td>@StatusBadge(f.Status) @if (f.IsOverdue) { @StatusBadge("Overdue") }</td>
+                                    <td>@f.AssignedToUser?.FullName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">History</div>
+            <div class="card-body">
+                @if (Model.History.Count == 0)
+                {
+                    <p class="small text-body-secondary mb-0">No recorded changes.</p>
+                }
+                else
+                {
+                    <ul class="timeline">
+                        @foreach (var h in Model.History)
+                        {
+                            <li>
+                                <div><strong>@h.Action</strong> <span class="text-body-secondary">by @(h.UserName ?? "system")</span></div>
+                                @if (h.Action != AuditActions.Create && !string.IsNullOrEmpty(ChangeSummary(h.OldValue, h.NewValue)))
+                                {
+                                    <div class="small">@ChangeSummary(h.OldValue, h.NewValue)</div>
+                                }
+                                @if (!string.IsNullOrEmpty(h.Details))
+                                {
+                                    <div class="small">@h.Details</div>
+                                }
+                                <div class="meta">@DateTimeText(h.CreatedDate)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>

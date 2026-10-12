@@ -1,0 +1,31 @@
+@model AcxiomCRM.ViewModels.PagerModel
+@if (Model.TotalCount > 0)
+{
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pager-bar">
+        <div class="small text-body-secondary">
+            Showing @Model.FirstItem–@Model.LastItem of @Model.TotalCount @Model.ItemName
+        </div>
+        @if (Model.TotalPages > 1)
+        {
+            var start = Math.Max(1, Model.Page - 2);
+            var end = Math.Min(Model.TotalPages, start + 4);
+            start = Math.Max(1, end - 4);
+            <nav aria-label="Pagination">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                        <a class="page-link" href="@Html.UrlWith(new Dictionary<string, string?> { [Model.PageParam] = (Model.Page - 1).ToString() })" aria-label="Previous page">&lsaquo;</a>
+                    </li>
+                    @for (var p = start; p <= end; p++)
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@Html.UrlWith(new Dictionary<string, string?> { [Model.PageParam] = p.ToString() })" aria-current="@(p == Model.Page ? "page" : null)">@p</a>
+                        </li>
+                    }
+                    <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                        <a class="page-link" href="@Html.UrlWith(new Dictionary<string, string?> { [Model.PageParam] = (Model.Page + 1).ToString() })" aria-label="Next page">&rsaquo;</a>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+}

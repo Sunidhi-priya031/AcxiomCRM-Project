@@ -1,0 +1,96 @@
+@model UserIndexViewModel
+@{
+    ViewData["Title"] = Model.CanManage ? "Users" : "My Team";
+    var s = Model.Search;
+}
+<div class="page-header">
+    <div>
+        <h1>@(Model.CanManage ? "Users" : "My team")</h1>
+        <div class="subtitle">@(Model.CanManage ? "Accounts, roles, status and lockout" : "Read-only view of your team members")</div>
+    </div>
+    @if (Model.CanManage)
+    {
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus me-1" aria-hidden="true"></i>New user</a>
+    }
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter users">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" for="q">Search</label>
+            <input type="search" id="q" name="q" value="@s.Q" class="form-control form-control-sm" placeholder="Name or email" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="role">Role</label>
+            <select id="role" name="role" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All roles</option>
+                @foreach (var r in AppRoles.All)
+                {
+                    <option value="@r" selected="@(s.Role == r)">@AppRoles.DisplayName(r)</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label" for="state">Account status</label>
+            <select id="state" name="state" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All</option>
+                <option value="active" selected="@(s.State == "active")">Active</option>
+                <option value="inactive" selected="@(s.State == "inactive")">Inactive</option>
+                <option value="locked" selected="@(s.State == "locked")">Locked out</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <input type="hidden" name="sort" value="@s.Sort" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</button>
+            <a asp-action="Index" class="btn btn-sm btn-light border">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Users.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-people" aria-hidden="true"></i>No users found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr>
+                        <th>@Html.SortLink("Name", "name")</th>
+                        <th>@Html.SortLink("Email", "email")</th>
+                        <th>@Html.SortLink("Role", "role")</th>
+                        <th>Reports to</th>
+                        <th>Status</th>
+                        <th>@Html.SortLink("Last login", "lastlogin")</th>
+                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model.Users.Items)
+                    {
+                        <tr>
+                            <td><span class="avatar me-2" aria-hidden="true">@Initials(u.FullName)</span><a asp-action="Details" asp-route-id="@u.Id" class="fw-medium">@u.FullName</a></td>
+                            <td>@u.Email</td>
+                            <td>@AppRoles.DisplayName(u.Role)</td>
+                            <td>@(u.ManagerName ?? "-")</td>
+                            <td>
+                                @if (u.IsActive) { <span class="badge badge-soft-success">Active</span> } else { <span class="badge badge-soft-secondary">Inactive</span> }
+                                @if (u.IsLockedOut) { <span class="badge badge-soft-danger">Locked</span> }
+                            </td>
+                            <td class="text-nowrap">@DateTimeText(u.LastLoginDate)</td>
+                            <td class="text-end">
+                                @if (Model.CanManage)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-light border" aria-label="Edit @u.FullName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Users, "users")' />
+</div>

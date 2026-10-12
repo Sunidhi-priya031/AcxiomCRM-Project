@@ -1,0 +1,197 @@
+@model LeadDetailsViewModel
+@{
+    var l = Model.Lead;
+    ViewData["Title"] = l.LeadName;
+    var steps = new[] { LeadStatus.New, LeadStatus.Contacted, LeadStatus.Qualified, LeadStatus.Converted };
+    var stepIndex = Array.IndexOf(steps, l.Status);
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Leads</a></li><li class="breadcrumb-item active" aria-current="page">@l.LeadCode</li></ol></nav>
+        <h1>@l.LeadName <span class="ms-1 align-middle">@StatusBadge(l.Status)</span></h1>
+        <div class="subtitle">@(l.CompanyName ?? "No company") · Assigned to @l.AssignedToUser?.FullName</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (!LeadWorkflow.IsFinal(l.Status))
+        {
+            <a asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@l.LeadId" class="btn btn-light border"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Schedule follow-up</a>
+        }
+        <a asp-controller="Activities" asp-action="Create" asp-route-leadId="@l.LeadId" class="btn btn-light border"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Log activity</a>
+        @if (l.Status == LeadStatus.Qualified)
+        {
+            <a asp-action="Convert" asp-route-id="@l.LeadId" class="btn btn-success"><i class="bi bi-arrow-right-circle me-1" aria-hidden="true"></i>Convert lead</a>
+        }
+        @if (l.Status != LeadStatus.Converted)
+        {
+            <a asp-action="Edit" asp-route-id="@l.LeadId" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+        }
+        @if (Model.CanDelete && l.Status != LeadStatus.Converted)
+        {
+            <a asp-action="Delete" asp-route-id="@l.LeadId" class="btn btn-outline-danger"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</a>
+        }
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="d-flex flex-wrap align-items-center gap-2 small" aria-label="Lead workflow">
+            @for (var i = 0; i < steps.Length; i++)
+            {
+                var done = stepIndex >= 0 && i <= stepIndex;
+                <span class="badge @(done ? "badge-soft-success" : "badge-soft-secondary") px-2 py-2">@(i + 1). @steps[i]</span>
+                @if (i < steps.Length - 1)
+                {
+                    <i class="bi bi-chevron-right text-body-tertiary" aria-hidden="true"></i>
+                }
+            }
+            @if (l.Status is LeadStatus.Lost or LeadStatus.Unqualified)
+            {
+                <span class="ms-2">This lead is @StatusBadge(l.Status)</span>
+            }
+            @if (Model.NextStatuses.Any())
+            {
+                <span class="ms-auto text-body-secondary">Next allowed: @string.Join(", ", Model.NextStatuses)@(l.Status == LeadStatus.Qualified ? ", Converted (via Convert)" : "")</span>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-4">
+        <div class="card mb-3">
+            <div class="card-header">Lead details</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Code</dt><dd>@l.LeadCode</dd>
+                    <dt>Email</dt><dd>@(l.Email ?? "-")</dd>
+                    <dt>Phone</dt><dd>@(l.Phone ?? "-")</dd>
+                    <dt>Company</dt><dd>@(l.CompanyName ?? "-")</dd>
+                    <dt>Source</dt><dd>@l.Source.GetDisplayName()</dd>
+                    <dt>Priority</dt><dd>@StatusBadge(l.Priority)</dd>
+                    <dt>Expected value</dt><dd>@Money(l.ExpectedValue)</dd>
+                    <dt>Assigned to</dt><dd>@l.AssignedToUser?.FullName</dd>
+                    <dt>Created</dt><dd>@DateTimeText(l.CreatedDate) by @l.CreatedByUser?.FullName</dd>
+                    @if (l.ConvertedDate.HasValue)
+                    {
+                        <dt>Converted</dt>
+                        <dd>@DateTimeText(l.ConvertedDate)<br /><a asp-controller="Customers" asp-action="Details" asp-route-id="@l.ConvertedCustomerId">@l.ConvertedCustomer?.CustomerName (@l.ConvertedCustomer?.CustomerCode)</a></dd>
+                    }
+                </dl>
+                @if (!string.IsNullOrEmpty(l.Notes))
+                {
+                    <hr />
+                    <div class="small text-body-secondary mb-1">Notes</div>
+                    <p class="mb-0" style="white-space: pre-line">@l.Notes</p>
+                }
+            </div>
+        </div>
+        <div class="card mb-3">
+            <div class="card-header">History</div>
+            <div class="card-body">
+                @if (Model.History.Count == 0)
+                {
+                    <p class="small text-body-secondary mb-0">No recorded changes.</p>
+                }
+                else
+                {
+                    <ul class="timeline">
+                        @foreach (var h in Model.History)
+                        {
+                            <li>
+                                <div><strong>@h.Action</strong> <span class="text-body-secondary">by @(h.UserName ?? "system")</span></div>
+                                @if (h.Action != AuditActions.Create && !string.IsNullOrEmpty(ChangeSummary(h.OldValue, h.NewValue)))
+                                {
+                                    <div class="small">@ChangeSummary(h.OldValue, h.NewValue)</div>
+                                }
+                                @if (!string.IsNullOrEmpty(h.Details))
+                                {
+                                    <div class="small">@h.Details</div>
+                                }
+                                <div class="meta">@DateTimeText(h.CreatedDate)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        @if (Model.Opportunities.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Opportunities from this lead</div>
+                <div class="table-responsive">
+                    <table class="table table-crm">
+                        <thead><tr><th>Opportunity</th><th>Customer</th><th>Stage</th><th class="text-end">Amount</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.Opportunities)
+                            {
+                                <tr>
+                                    <td><a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a></td>
+                                    <td>@o.Customer?.CustomerName</td>
+                                    <td>@StatusBadge(o.Stage)</td>
+                                    <td class="text-end">@Money(o.Amount)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <div class="card mb-3">
+            <div class="card-header">Follow-ups (@Model.FollowUps.Count)</div>
+            @if (Model.FollowUps.Count == 0)
+            {
+                <div class="empty-state py-4">No follow-ups.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-crm">
+                        <thead><tr><th>Date</th><th>Subject</th><th>Type</th><th>Status</th><th>Owner</th></tr></thead>
+                        <tbody>
+                            @foreach (var f in Model.FollowUps)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@DateTimeText(f.FollowUpDate)</td>
+                                    <td><a asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.FollowUpId">@f.Subject</a></td>
+                                    <td>@f.FollowUpType</td>
+                                    <td>@StatusBadge(f.Status) @if (f.IsOverdue) { @StatusBadge("Overdue") }</td>
+                                    <td>@f.AssignedToUser?.FullName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Activities (@Model.Activities.Count)</div>
+            @if (Model.Activities.Count == 0)
+            {
+                <div class="empty-state py-4">No activities logged.</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush small">
+                    @foreach (var a in Model.Activities)
+                    {
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span><i class="bi @ActivityIcon(a.ActivityType) me-2 text-body-secondary" aria-hidden="true"></i><a asp-controller="Activities" asp-action="Edit" asp-route-id="@a.ActivityId">@a.Subject</a> @StatusBadge(a.Status)</span>
+                                <span class="text-body-secondary text-nowrap">@DateTimeText(a.ActivityDate) · @a.AssignedToUser?.FullName</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(a.Description))
+                            {
+                                <div class="text-body-secondary mt-1">@a.Description</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

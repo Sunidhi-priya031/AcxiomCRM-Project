@@ -1,0 +1,55 @@
+@model ReportPage<AuditReportRow>
+@{
+    ViewData["Title"] = Model.Title;
+    var header = new ReportHeaderView
+    {
+        Title = Model.Title,
+        Description = Model.Description,
+        Summary = Model.Summary,
+        Exports = { ("Export CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["page"] = null })) }
+    };
+    var filters = new ReportFilterView
+    {
+        Filter = Model.Filter,
+        Owners = Model.Owners,
+        DateLabel = "Event date",
+        OwnerParam = "userId",
+        Statuses = new[] { AuditResults.Success, AuditResults.Failure },
+        StatusLabel = "Result",
+        Actions = AuditActions.All,
+        Entities = AuditEntities.All,
+        ShowSearch = true,
+        SearchPlaceholder = "User, details or record id"
+    };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Record</th><th>Result</th><th>IP address</th><th>Details</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap"><a asp-controller="AuditLogs" asp-action="Details" asp-route-id="@r.Id">@r.Timestamp.ToString("dd MMM yyyy HH:mm:ss")</a></td>
+                        <td>@r.User</td>
+                        <td>@r.Action</td>
+                        <td>@r.Entity</td>
+                        <td class="text-body-secondary">@r.RecordId</td>
+                        <td>@StatusBadge(r.Result)</td>
+                        <td class="text-body-secondary">@r.IpAddress</td>
+                        <td class="small text-truncate" style="max-width: 280px">@r.Details</td>
+                    </tr>
+                }
+                @if (Model.Rows.TotalCount == 0)
+                {
+                    <tr><td colspan="8" class="empty-state">No audit events match the filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Rows, "events")" />
+</div>

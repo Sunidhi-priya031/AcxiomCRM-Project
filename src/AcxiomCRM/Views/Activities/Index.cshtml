@@ -1,0 +1,123 @@
+@model ActivityIndexViewModel
+@{
+    ViewData["Title"] = "Activities";
+    var s = Model.Search;
+}
+<div class="page-header">
+    <div>
+        <h1>Activities</h1>
+        <div class="subtitle">Calls, meetings, emails and tasks logged against customers and leads</div>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Log activity</button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            @foreach (var t in Enum.GetValues<ActivityType>())
+            {
+                <li><a class="dropdown-item" asp-action="Create" asp-route-type="@t"><i class="bi @ActivityIcon(t) me-2" aria-hidden="true"></i>@t</a></li>
+            }
+        </ul>
+    </div>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter activities">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" for="q">Search</label>
+            <input type="search" id="q" name="q" value="@s.Q" class="form-control form-control-sm" placeholder="Subject, customer or lead" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="type">Activity type</label>
+            <select id="type" name="type" class="form-select form-select-sm">
+                <option value="">All</option>
+                @foreach (var t in Enum.GetValues<ActivityType>())
+                {
+                    <option value="@t" selected="@(s.Type == t)">@t</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select form-select-sm">
+                <option value="">All</option>
+                @foreach (var st in Enum.GetValues<ActivityStatus>())
+                {
+                    <option value="@st" selected="@(s.Status == st)">@st</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" value="@s.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" value="@s.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="assignedTo">Assigned to</label>
+            <select id="assignedTo" name="assignedTo" class="form-select form-select-sm">
+                <option value="">All users</option>
+                @foreach (var u in Model.Owners)
+                {
+                    <option value="@u.Id" selected="@(s.AssignedTo == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-12 d-flex gap-2 justify-content-end">
+            <input type="hidden" name="sort" value="@s.Sort" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</button>
+            <a asp-action="Index" class="btn btn-sm btn-light border">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Results.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-activity" aria-hidden="true"></i>No activities found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr>
+                        <th>@Html.SortLink("Date", "date")</th>
+                        <th>@Html.SortLink("Type", "type")</th>
+                        <th>@Html.SortLink("Subject", "subject")</th>
+                        <th>Related to</th>
+                        <th>@Html.SortLink("Status", "status")</th>
+                        <th>Assigned to</th>
+                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@DateTimeText(a.ActivityDate)</td>
+                            <td class="text-nowrap"><i class="bi @ActivityIcon(a.ActivityType) me-1 text-body-secondary" aria-hidden="true"></i>@a.ActivityType</td>
+                            <td><a asp-action="Edit" asp-route-id="@a.ActivityId" class="fw-medium">@a.Subject</a>
+                                @if (!string.IsNullOrEmpty(a.Description)) { <span class="cell-sub text-truncate d-inline-block" style="max-width: 320px">@a.Description</span> }
+                            </td>
+                            <td>
+                                @if (a.Customer != null) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@a.CustomerId">@a.Customer.CustomerName</a><span class="cell-sub">Customer</span> }
+                                else if (a.Lead != null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@a.LeadId">@a.Lead.LeadName</a><span class="cell-sub">Lead</span> }
+                            </td>
+                            <td>@StatusBadge(a.Status)</td>
+                            <td>@a.AssignedToUser?.FullName</td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@a.ActivityId" class="btn btn-sm btn-light border" aria-label="Edit @a.Subject"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                @if (Model.CanDelete)
+                                {
+                                    <a asp-action="Delete" asp-route-id="@a.ActivityId" class="btn btn-sm btn-light border text-danger" aria-label="Delete @a.Subject"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Results, "activities")' />
+</div>

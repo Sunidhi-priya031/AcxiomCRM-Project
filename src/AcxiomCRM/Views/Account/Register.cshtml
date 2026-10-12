@@ -1,0 +1,42 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Create account";
+    Layout = "_AuthLayout";
+}
+<h1 class="h5 fw-semibold mb-1">Create an account</h1>
+<p class="text-body-secondary small mb-4">New accounts start with the Sales Executive role. An administrator can change your role.</p>
+
+<form asp-action="Register" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label required"></label>
+        <input asp-for="FullName" class="form-control" autocomplete="name" autofocus />
+        <span asp-validation-for="FullName"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label required"></label>
+        <input asp-for="Email" class="form-control" type="email" autocomplete="email" />
+        <span asp-validation-for="Email"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label required"></label>
+        <input asp-for="Password" class="form-control" autocomplete="new-password" aria-describedby="passwordHelp" />
+        <div id="passwordHelp" class="form-text">At least 8 characters with upper- and lower-case letters, a number and a symbol.</div>
+        <span asp-validation-for="Password"></span>
+    </div>
+    <div class="mb-4">
+        <label asp-for="ConfirmPassword" class="form-label required"></label>
+        <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+        <span asp-validation-for="ConfirmPassword"></span>
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Create account</button>
+</form>
+
+<p class="small text-center mt-4 mb-0">
+    Already have an account? <a asp-action="Login">Sign in</a>
+</p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

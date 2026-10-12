@@ -1,0 +1,80 @@
+@model PipelineReport
+@{
+    ViewData["Title"] = "Pipeline Report";
+    var header = new ReportHeaderView
+    {
+        Title = "Pipeline Report",
+        Description = "Stage-wise and owner-wise pipeline. Weighted amount = Amount × Probability / 100.",
+        Summary = Model.Summary,
+        Exports =
+        {
+            ("By stage CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["table"] = "stage", ["page"] = null })),
+            ("By owner CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["table"] = "owner", ["page"] = null }))
+        }
+    };
+    var filters = new ReportFilterView { Filter = Model.Filter, Owners = Model.Owners };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card">
+            <div class="card-header">By stage</div>
+            <div class="table-responsive">
+                <table class="table table-crm">
+                    <thead><tr><th>Stage</th><th class="text-end">Count</th><th class="text-end">Amount</th><th class="text-end">Weighted</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model.ByStage)
+                        {
+                            <tr>
+                                <td>@StatusBadge(r.Stage)</td>
+                                <td class="text-end">@r.Count</td>
+                                <td class="text-end">@Money(r.Amount)</td>
+                                <td class="text-end">@Money(r.Weighted)</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        @{ var open = Model.ByStage.Where(r => r.Stage != "Won" && r.Stage != "Lost").ToList(); }
+                        <tr class="fw-semibold"><td>Open pipeline</td><td class="text-end">@open.Sum(r => r.Count)</td><td class="text-end">@Money(open.Sum(r => r.Amount))</td><td class="text-end">@Money(open.Sum(r => r.Weighted))</td></tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header">By owner</div>
+            <div class="table-responsive">
+                <table class="table table-crm">
+                    <thead>
+                        <tr>
+                            <th>@Html.SortLink("Owner", "owner")</th><th class="text-end">Open</th><th class="text-end">@Html.SortLink("Pipeline", "amount")</th>
+                            <th class="text-end">@Html.SortLink("Weighted", "weighted")</th><th class="text-end">Won</th><th class="text-end">@Html.SortLink("Won amount", "won")</th><th class="text-end">Lost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.ByOwner.Items)
+                        {
+                            <tr>
+                                <td>@r.Owner</td>
+                                <td class="text-end">@r.OpenCount</td>
+                                <td class="text-end">@Money(r.Amount)</td>
+                                <td class="text-end">@Money(r.Weighted)</td>
+                                <td class="text-end">@r.WonCount</td>
+                                <td class="text-end">@Money(r.WonAmount)</td>
+                                <td class="text-end">@r.LostCount</td>
+                            </tr>
+                        }
+                        @if (Model.ByOwner.TotalCount == 0)
+                        {
+                            <tr><td colspan="7" class="empty-state">No opportunities in this period.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <partial name="_Pager" model="@PagerModel.From(Model.ByOwner, "owners")" />
+        </div>
+    </div>
+</div>

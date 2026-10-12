@@ -1,0 +1,77 @@
+@model CustomerFormViewModel
+<div class="card-body">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+    <input type="hidden" asp-for="CustomerId" />
+
+    <div class="form-section-title">Customer</div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="CustomerName" class="form-label required"></label>
+            <input asp-for="CustomerName" class="form-control" maxlength="100" />
+            <span asp-validation-for="CustomerName"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="CompanyName" class="form-label"></label>
+            <input asp-for="CompanyName" class="form-control" maxlength="150" />
+            <span asp-validation-for="CompanyName"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Email" class="form-label required"></label>
+            <input asp-for="Email" class="form-control" type="email" maxlength="256" autocomplete="off" />
+            <span asp-validation-for="Email"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Phone" class="form-label required"></label>
+            <input asp-for="Phone" class="form-control" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit mobile number" aria-describedby="phoneHelp" />
+            <div id="phoneHelp" class="form-text">10 digits, starting with 6, 7, 8 or 9.</div>
+            <span asp-validation-for="Phone"></span>
+        </div>
+    </div>
+
+    <div class="form-section-title">Address</div>
+    <div class="row g-3">
+        <div class="col-12">
+            <label asp-for="Address" class="form-label"></label>
+            <input asp-for="Address" class="form-control" maxlength="250" />
+            <span asp-validation-for="Address"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="City" class="form-label"></label>
+            <input asp-for="City" class="form-control" maxlength="100" />
+            <span asp-validation-for="City"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="State" class="form-label"></label>
+            <input asp-for="State" class="form-control" maxlength="100" />
+            <span asp-validation-for="State"></span>
+        </div>
+    </div>
+
+    <div class="form-section-title">Ownership</div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="AssignedTo" class="form-label"></label>
+            @if (Model.CanChooseAssignee)
+            {
+                <select asp-for="AssignedTo" asp-items="Model.AssignableUsers" class="form-select"></select>
+            }
+            else
+            {
+                <input type="hidden" asp-for="AssignedTo" />
+                <select class="form-select" disabled aria-describedby="ownerHelp" asp-items="Model.AssignableUsers"></select>
+                <div id="ownerHelp" class="form-text">Customers you create are assigned to you.</div>
+            }
+            <span asp-validation-for="AssignedTo"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Status" class="form-label"></label>
+            <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<CustomerStatus>()"></select>
+            <span asp-validation-for="Status"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Notes" class="form-label"></label>
+            <textarea asp-for="Notes" class="form-control" rows="3" maxlength="1000"></textarea>
+            <span asp-validation-for="Notes"></span>
+        </div>
+    </div>
+</div>

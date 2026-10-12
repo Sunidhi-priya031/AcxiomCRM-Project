@@ -1,0 +1,53 @@
+@model AuditLog
+@{
+    ViewData["Title"] = "Audit entry";
+    string? link = Model.EntityName switch
+    {
+        AuditEntities.Customer => Url.Action("Details", "Customers", new { id = Model.RecordId }),
+        AuditEntities.Lead => Url.Action("Details", "Leads", new { id = Model.RecordId }),
+        AuditEntities.Opportunity => Url.Action("Details", "Opportunities", new { id = Model.RecordId }),
+        AuditEntities.FollowUp => Url.Action("Details", "FollowUps", new { id = Model.RecordId }),
+        AuditEntities.User => Url.Action("Details", "Users", new { id = Model.RecordId }),
+        _ => null
+    };
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Audit log</a></li><li class="breadcrumb-item active" aria-current="page">#@Model.AuditLogId</li></ol></nav>
+        <h1>@Model.Action · @Model.EntityName <span class="ms-1 align-middle">@StatusBadge(Model.Result)</span></h1>
+        <div class="subtitle">@DateTimeText(Model.CreatedDate) · @(Model.UserName ?? "system")</div>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header">Event</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Entry</dt><dd>#@Model.AuditLogId</dd>
+                    <dt>Timestamp</dt><dd>@Model.CreatedDate.ToString("dd MMM yyyy HH:mm:ss")</dd>
+                    <dt>User</dt><dd>@(Model.UserName ?? "-")</dd>
+                    <dt>User Id</dt><dd class="small text-break">@(Model.UserId ?? "-")</dd>
+                    <dt>Action</dt><dd>@Model.Action</dd>
+                    <dt>Entity</dt><dd>@Model.EntityName</dd>
+                    <dt>Record Id</dt><dd>@if (link != null && Model.RecordId != null) { <a href="@link">@Model.RecordId</a> } else { @(Model.RecordId ?? "-") }</dd>
+                    <dt>Result</dt><dd>@Model.Result</dd>
+                    <dt>IP address</dt><dd>@(Model.IpAddress ?? "-")</dd>
+                    <dt>Details</dt><dd>@(Model.Details ?? "-")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header">Old value</div>
+            <div class="card-body"><pre class="audit-json mb-0">@PrettyJson(Model.OldValue)</pre></div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card h-100">
+            <div class="card-header">New value</div>
+            <div class="card-body"><pre class="audit-json mb-0">@PrettyJson(Model.NewValue)</pre></div>
+        </div>
+    </div>
+</div>

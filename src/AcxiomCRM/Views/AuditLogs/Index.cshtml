@@ -1,0 +1,100 @@
+@model AuditIndexViewModel
+@{
+    ViewData["Title"] = "Audit Log";
+    var f = Model.Filter;
+}
+<div class="page-header">
+    <div>
+        <h1>Audit log</h1>
+        <div class="subtitle">Append-only record of security and business events. Entries cannot be edited or deleted.</div>
+    </div>
+    <a asp-controller="Reports" asp-action="Audit" class="btn btn-light border"><i class="bi bi-file-earmark-bar-graph me-1" aria-hidden="true"></i>Audit report &amp; export</a>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter audit log">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="userId">User</label>
+            <select id="userId" name="userId" class="form-select form-select-sm">
+                <option value="">All users</option>
+                @foreach (var u in Model.Users)
+                {
+                    <option value="@u.Id" selected="@(f.UserId == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="entity">Module</label>
+            <select id="entity" name="entity" class="form-select form-select-sm">
+                <option value="">All modules</option>
+                @foreach (var e in AuditEntities.All)
+                {
+                    <option value="@e" selected="@(f.Entity == e)">@e</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="action">Action</label>
+            <select id="action" name="action" class="form-select form-select-sm">
+                <option value="">All actions</option>
+                @foreach (var a in AuditActions.All)
+                {
+                    <option value="@a" selected="@(f.Action == a)">@a</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-1">
+            <label class="form-label" for="status">Result</label>
+            <select id="status" name="status" class="form-select form-select-sm">
+                <option value="">All</option>
+                <option value="Success" selected="@(f.Status == "Success")">Success</option>
+                <option value="Failure" selected="@(f.Status == "Failure")">Failure</option>
+            </select>
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-md-6 col-lg-1 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary" aria-label="Apply filters"><i class="bi bi-search" aria-hidden="true"></i></button>
+            <a asp-action="Index" class="btn btn-sm btn-light border" aria-label="Reset filters"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Results.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-journal-text" aria-hidden="true"></i>No audit entries match your filters.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Record</th><th>Result</th><th>Details</th><th>IP address</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap"><a asp-action="Details" asp-route-id="@a.AuditLogId">@a.CreatedDate.ToString("dd MMM yyyy HH:mm:ss")</a></td>
+                            <td>@(a.UserName ?? "-")</td>
+                            <td>@a.Action</td>
+                            <td>@a.EntityName</td>
+                            <td class="text-body-secondary">@(a.EntityName == AuditEntities.Account || a.EntityName == AuditEntities.User ? "" : a.RecordId)</td>
+                            <td>@StatusBadge(a.Result)</td>
+                            <td class="small text-truncate" style="max-width: 280px">@(a.Details ?? ChangeSummary(a.OldValue, a.NewValue))</td>
+                            <td class="text-body-secondary">@a.IpAddress</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Results, "entries")' />
+</div>

@@ -1,0 +1,37 @@
+### AcxiomCRM API requests (Visual Studio .http file / VS Code REST Client)
+@base = http://localhost:5173
+
+### 1. Sign in - copy accessToken from the response into @token below
+POST {{base}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "rohan.das@acxiomcrm.local", "password": "Demo@12345" }
+
+###
+@token = paste-access-token-here
+
+### Customers in my scope
+GET {{base}}/api/customers?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Create a customer
+POST {{base}}/api/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "customerName": "Ankit Senapati", "email": "ankit.senapati@example.com", "phone": "9437998877", "companyName": "Senapati Traders", "city": "Bhubaneswar", "state": "Odisha", "status": "Active" }
+
+### Invalid opportunity (amount 0, probability 120) -> 400
+POST {{base}}/api/opportunities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "opportunityName": "Bad deal", "customerId": 1, "amount": 0, "stage": "Qualification", "probability": 120, "expectedCloseDate": "2020-01-01" }
+
+### Pipeline report
+GET {{base}}/api/reports/pipeline
+Authorization: Bearer {{token}}
+
+### Sign out (revokes the token)
+POST {{base}}/api/auth/logout
+Authorization: Bearer {{token}}

@@ -1,0 +1,96 @@
+@model CustomerIndexViewModel
+@{
+    ViewData["Title"] = "Customers";
+    var s = Model.Search;
+}
+<div class="page-header">
+    <div>
+        <h1>Customers</h1>
+        <div class="subtitle">Customer master data, contacts and status</div>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New customer</a>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter customers">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-5 col-lg-4">
+            <label class="form-label" for="q">Search</label>
+            <input type="search" id="q" name="q" value="@s.Q" class="form-control form-control-sm" placeholder="Name, email, phone, company or code" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All</option>
+                @foreach (var st in Enum.GetValues<CustomerStatus>())
+                {
+                    <option value="@st" selected="@(s.Status == st)">@st</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-4 col-lg-3">
+            <label class="form-label" for="assignedTo">Owner</label>
+            <select id="assignedTo" name="assignedTo" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All owners</option>
+                @foreach (var u in Model.Owners)
+                {
+                    <option value="@u.Id" selected="@(s.AssignedTo == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-12 col-lg-3 d-flex gap-2">
+            <input type="hidden" name="sort" value="@s.Sort" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</button>
+            <a asp-action="Index" class="btn btn-sm btn-light border">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Results.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-building" aria-hidden="true"></i>No customers match your filters.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr>
+                        <th>@Html.SortLink("Code", "code")</th>
+                        <th>@Html.SortLink("Customer", "name")</th>
+                        <th>@Html.SortLink("Company", "company")</th>
+                        <th>Contact</th>
+                        <th>@Html.SortLink("City", "city")</th>
+                        <th>@Html.SortLink("Status", "status")</th>
+                        <th>Owner</th>
+                        <th>@Html.SortLink("Created", "created")</th>
+                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap text-body-secondary">@c.CustomerCode</td>
+                            <td><a asp-action="Details" asp-route-id="@c.CustomerId" class="fw-medium">@c.CustomerName</a></td>
+                            <td>@(c.CompanyName ?? "-")</td>
+                            <td>@c.Email<span class="cell-sub">@c.Phone</span></td>
+                            <td>@(c.City ?? "-")</td>
+                            <td>@StatusBadge(c.Status)</td>
+                            <td>@c.AssignedToUser?.FullName</td>
+                            <td class="text-nowrap">@Date(c.CreatedDate)</td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@c.CustomerId" class="btn btn-sm btn-light border" aria-label="Edit @c.CustomerName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                @if (Model.CanDelete)
+                                {
+                                    <a asp-action="Delete" asp-route-id="@c.CustomerId" class="btn btn-sm btn-light border text-danger" aria-label="Delete @c.CustomerName"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Results, "customers")' />
+</div>

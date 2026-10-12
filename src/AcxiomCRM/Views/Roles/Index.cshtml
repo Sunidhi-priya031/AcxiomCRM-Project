@@ -1,0 +1,53 @@
+@model RolesViewModel
+@{
+    ViewData["Title"] = "Roles & Permissions";
+}
+<div class="page-header">
+    <div>
+        <h1>Roles &amp; permissions</h1>
+        <div class="subtitle">Each user has exactly one primary role. Assign roles on the user's edit page.</div>
+    </div>
+    <a asp-controller="Users" asp-action="Index" class="btn btn-light border"><i class="bi bi-people me-1" aria-hidden="true"></i>Manage users</a>
+</div>
+
+<div class="row g-3 mb-3">
+    @foreach (var r in Model.Roles)
+    {
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h2 class="h6 fw-semibold mb-1">@r.DisplayName</h2>
+                        <a asp-controller="Users" asp-action="Index" asp-route-role="@r.Name" class="small">@r.TotalUsers user(s)</a>
+                    </div>
+                    <p class="small text-body-secondary mb-2">@r.Description</p>
+                    <div class="small">@r.ActiveUsers active</div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="card">
+    <div class="card-header">Permission matrix</div>
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead><tr><th>Module</th><th>Admin</th><th>Manager</th><th>Sales Executive</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.Permissions)
+                {
+                    <tr>
+                        <td class="fw-medium">@p.Module</td>
+                        <td>@p.Admin</td>
+                        <td class="@(p.Manager == "No access" ? "text-body-secondary" : "")">@p.Manager</td>
+                        <td class="@(p.SalesExecutive == "No access" ? "text-body-secondary" : "")">@p.SalesExecutive</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body border-top small text-body-secondary">
+        These rules are enforced on the server for every page, record and API endpoint - hiding a menu item is never the only protection.
+        "Team" means the manager's own records plus those of sales executives who report to them.
+    </div>
+</div>

@@ -1,0 +1,102 @@
+@model UserDetailsViewModel
+@{
+    var u = Model.User;
+    ViewData["Title"] = u.FullName;
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Users</a></li><li class="breadcrumb-item active" aria-current="page">@u.FullName</li></ol></nav>
+        <h1>@u.FullName</h1>
+        <div class="subtitle">@u.Email · @AppRoles.DisplayName(u.Role)</div>
+    </div>
+    @if (Model.CanManage)
+    {
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+            <a asp-action="ResetPassword" asp-route-id="@u.Id" class="btn btn-light border"><i class="bi bi-key me-1" aria-hidden="true"></i>Reset password</a>
+            @if (u.IsLockedOut)
+            {
+                <form asp-action="Unlock" asp-route-id="@u.Id" method="post" data-confirm="Unlock this account?" data-confirm-button="Unlock" data-confirm-style="btn-primary">
+                    <button type="submit" class="btn btn-light border"><i class="bi bi-unlock me-1" aria-hidden="true"></i>Unlock</button>
+                </form>
+            }
+            <form asp-action="SetActive" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" method="post"
+                  data-confirm="@(u.IsActive ? "Deactivate this user? They will be signed out and can't sign in until reactivated." : "Reactivate this user?")"
+                  data-confirm-button="@(u.IsActive ? "Deactivate" : "Activate")" data-confirm-style="@(u.IsActive ? "btn-danger" : "btn-primary")">
+                <button type="submit" class="btn @(u.IsActive ? "btn-outline-danger" : "btn-outline-primary")">@(u.IsActive ? "Deactivate" : "Activate")</button>
+            </form>
+        </div>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card mb-3">
+            <div class="card-header">Account</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Name</dt><dd>@u.FullName</dd>
+                    <dt>Email</dt><dd>@u.Email</dd>
+                    <dt>Role</dt><dd>@AppRoles.DisplayName(u.Role)</dd>
+                    <dt>Reports to</dt><dd>@(u.ManagerName ?? "-")</dd>
+                    <dt>Status</dt><dd>@if (u.IsActive) { <span class="badge badge-soft-success">Active</span> } else { <span class="badge badge-soft-secondary">Inactive</span> }</dd>
+                    <dt>Lockout</dt>
+                    <dd>
+                        @if (u.IsLockedOut) { <span class="badge badge-soft-danger">Locked until @u.LockoutEnd?.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span> }
+                        else { <span>Not locked</span> }
+                        <span class="d-block small text-body-secondary">Failed attempts since last success: @u.AccessFailedCount</span>
+                    </dd>
+                    <dt>Last login</dt><dd>@DateTimeText(u.LastLoginDate)</dd>
+                    <dt>Created</dt><dd>@DateTimeText(u.CreatedDate)</dd>
+                </dl>
+            </div>
+        </div>
+        @if (Model.TeamMembers.Count > 0)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Team members (@Model.TeamMembers.Count)</div>
+                <ul class="list-group list-group-flush small">
+                    @foreach (var m in Model.TeamMembers)
+                    {
+                        <li class="list-group-item d-flex justify-content-between"><a asp-action="Details" asp-route-id="@m.Id">@m.FullName</a><span class="text-body-secondary">@AppRoles.DisplayName(m.Role)</span></li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+    @if (Model.CanManage)
+    {
+        <div class="col-xl-7">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent security and account events</span>
+                    <a asp-controller="AuditLogs" asp-action="Index" asp-route-userId="@u.Id" class="small fw-normal">All events</a>
+                </div>
+                @if (Model.RecentEvents.Count == 0)
+                {
+                    <div class="empty-state py-4">No events recorded.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-crm">
+                            <thead><tr><th>When</th><th>Action</th><th>Entity</th><th>Result</th><th>IP</th></tr></thead>
+                            <tbody>
+                                @foreach (var e in Model.RecentEvents)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap"><a asp-controller="AuditLogs" asp-action="Details" asp-route-id="@e.AuditLogId">@e.CreatedDate.ToString("dd MMM yyyy HH:mm")</a></td>
+                                        <td>@e.Action</td>
+                                        <td>@e.EntityName @(e.RecordId != null && e.EntityName != AuditEntities.Account ? "#" + e.RecordId : "")</td>
+                                        <td>@StatusBadge(e.Result)</td>
+                                        <td class="text-body-secondary">@e.IpAddress</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

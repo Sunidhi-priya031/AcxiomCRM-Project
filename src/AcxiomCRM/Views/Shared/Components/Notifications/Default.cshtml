@@ -1,0 +1,46 @@
+@model AcxiomCRM.ViewComponents.NotificationsModel
+<div class="dropdown">
+    <button class="btn btn-icon position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+            aria-label="Notifications: @Model.Total follow-up(s) need attention">
+        <i class="bi bi-bell fs-5" aria-hidden="true"></i>
+        @if (Model.Total > 0)
+        {
+            <span class="notif-count @(Model.Overdue > 0 ? "bg-danger" : "bg-primary")">@(Model.Total > 99 ? "99+" : Model.Total.ToString())</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end notif-menu p-0">
+        <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-semibold small">My follow-ups</span>
+            <span class="small text-body-secondary">@Model.Overdue overdue · @Model.Today today</span>
+        </div>
+        @if (Model.Items.Count == 0)
+        {
+            <div class="px-3 py-4 text-center small text-body-secondary">Nothing due. You're all caught up.</div>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var f in Model.Items)
+                {
+                    <a class="list-group-item list-group-item-action small" asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.FollowUpId">
+                        <div class="d-flex justify-content-between gap-2">
+                            <span class="fw-medium text-truncate"><i class="bi @FollowUpIcon(f.FollowUpType) me-1" aria-hidden="true"></i>@f.Subject</span>
+                            @if (f.IsOverdue)
+                            {
+                                <span class="text-danger text-nowrap">Overdue</span>
+                            }
+                            else
+                            {
+                                <span class="text-body-secondary text-nowrap">@f.FollowUpDate.ToString("hh:mm tt")</span>
+                            }
+                        </div>
+                        <div class="text-body-secondary text-truncate">@(f.Customer?.CustomerName ?? f.Lead?.LeadName ?? f.Opportunity?.OpportunityName) · @Date(f.FollowUpDate)</div>
+                    </a>
+                }
+            </div>
+        }
+        <div class="border-top px-3 py-2 text-center">
+            <a class="small" asp-controller="FollowUps" asp-action="Index" asp-route-view="pending" asp-route-assignedTo="@ViewContext.HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value">View all pending follow-ups</a>
+        </div>
+    </div>
+</div>

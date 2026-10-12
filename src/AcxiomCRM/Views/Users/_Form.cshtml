@@ -1,0 +1,62 @@
+@model UserFormViewModel
+@{
+    var isCreate = string.IsNullOrEmpty(Model.Id);
+}
+<div class="card-body">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="FullName" class="form-label required"></label>
+            <input asp-for="FullName" class="form-control" maxlength="100" />
+            <span asp-validation-for="FullName"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Email" class="form-label required"></label>
+            <input asp-for="Email" class="form-control" type="email" maxlength="256" autocomplete="off" />
+            <span asp-validation-for="Email"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Role" class="form-label required"></label>
+            <select asp-for="Role" class="form-select">
+                @foreach (var r in AppRoles.All)
+                {
+                    <option value="@r">@AppRoles.DisplayName(r)</option>
+                }
+            </select>
+            <span asp-validation-for="Role"></span>
+        </div>
+        <div class="col-md-6" data-show-when="Role=SalesExecutive">
+            <label asp-for="ManagerId" class="form-label"></label>
+            <select asp-for="ManagerId" class="form-select">
+                <option value="">No manager</option>
+                @foreach (var m in Model.Managers)
+                {
+                    <option value="@m.Id">@m.FullName</option>
+                }
+            </select>
+            <div class="form-text">A manager sees the records of the sales executives who report to them.</div>
+            <span asp-validation-for="ManagerId"></span>
+        </div>
+        @if (isCreate)
+        {
+            <div class="col-md-6">
+                <label asp-for="Password" class="form-label required"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" aria-describedby="pwHelp" />
+                <div id="pwHelp" class="form-text">At least 8 characters with upper- and lower-case letters, a number and a symbol.</div>
+                <span asp-validation-for="Password"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="ConfirmPassword" class="form-label required"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword"></span>
+            </div>
+        }
+        <div class="col-12">
+            <div class="form-check form-switch">
+                <input asp-for="IsActive" class="form-check-input" role="switch" />
+                <label asp-for="IsActive" class="form-check-label">Account is active</label>
+            </div>
+            <span asp-validation-for="IsActive"></span>
+        </div>
+    </div>
+</div>

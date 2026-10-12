@@ -1,0 +1,147 @@
+@model FollowUpDetailsViewModel
+@{
+    var f = Model.FollowUp;
+    ViewData["Title"] = f.Subject;
+    var canAct = f.Status == FollowUpStatus.Planned;
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Follow-ups</a></li><li class="breadcrumb-item active" aria-current="page">Details</li></ol></nav>
+        <h1><i class="bi @FollowUpIcon(f.FollowUpType) me-2 text-body-secondary" aria-hidden="true"></i>@f.Subject <span class="ms-1 align-middle">@StatusBadge(f.Status) @if (f.IsOverdue) { @StatusBadge("Overdue") }</span></h1>
+        <div class="subtitle">@f.FollowUpType · @DateTimeText(f.FollowUpDate) · Assigned to @f.AssignedToUser?.FullName</div>
+    </div>
+    @if (canAct)
+    {
+        <a asp-action="Edit" asp-route-id="@f.FollowUpId" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-5">
+        <div class="card mb-3">
+            <div class="card-header">Details</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Related to</dt>
+                    <dd>
+                        @if (f.Customer != null) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@f.CustomerId">@f.Customer.CustomerName</a> <span class="text-body-secondary">(Customer)</span> }
+                        else if (f.Lead != null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@f.LeadId">@f.Lead.LeadName</a> <span class="text-body-secondary">(Lead)</span> }
+                        else if (f.Opportunity != null) { <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@f.OpportunityId">@f.Opportunity.OpportunityName</a> <span class="text-body-secondary">(Opportunity)</span> }
+                    </dd>
+                    <dt>Type</dt><dd>@f.FollowUpType</dd>
+                    <dt>Date</dt><dd class="@(f.IsOverdue ? "text-danger" : "")">@DateTimeText(f.FollowUpDate)</dd>
+                    <dt>Status</dt><dd>@StatusBadge(f.Status)</dd>
+                    <dt>Assigned to</dt><dd>@f.AssignedToUser?.FullName</dd>
+                    <dt>Created</dt><dd>@DateTimeText(f.CreatedDate) by @f.CreatedByUser?.FullName</dd>
+                    @if (f.CompletedDate.HasValue)
+                    {
+                        <dt>Completed</dt><dd>@DateTimeText(f.CompletedDate)</dd>
+                    }
+                </dl>
+                @if (!string.IsNullOrEmpty(f.Remarks))
+                {
+                    <hr />
+                    <div class="small text-body-secondary mb-1">Remarks</div>
+                    <p class="mb-0" style="white-space: pre-line">@f.Remarks</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        @if (canAct)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Complete</div>
+                <div class="card-body">
+                    <form asp-action="Complete" asp-route-id="@f.FollowUpId" method="post" novalidate>
+                        <label asp-for="Complete.Outcome" class="form-label"></label>
+                        <textarea asp-for="Complete.Outcome" class="form-control mb-2" rows="2" maxlength="1000" placeholder="What was discussed or agreed?"></textarea>
+                        <span asp-validation-for="Complete.Outcome"></span>
+                        <div class="d-flex justify-content-between align-items-center gap-2 mt-2">
+                            <span class="small text-body-secondary">Completing logs an activity on the related record@(f.Lead?.Status == LeadStatus.New ? " and moves the lead to Contacted" : "").</span>
+                            <button type="submit" class="btn btn-success text-nowrap"><i class="bi bi-check2 me-1" aria-hidden="true"></i>Mark completed</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (f.Status is FollowUpStatus.Planned or FollowUpStatus.Missed)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Reschedule</div>
+                <div class="card-body">
+                    <form asp-action="Reschedule" asp-route-id="@f.FollowUpId" method="post" novalidate class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label asp-for="Reschedule.NewDate" class="form-label"></label>
+                            <input asp-for="Reschedule.NewDate" class="form-control" type="datetime-local" />
+                            <span asp-validation-for="Reschedule.NewDate"></span>
+                        </div>
+                        <div class="col-md-5">
+                            <label asp-for="Reschedule.Reason" class="form-label">Reason (optional)</label>
+                            <input asp-for="Reschedule.Reason" class="form-control" maxlength="500" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Reschedule</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        @if (canAct)
+        {
+            <div class="card mb-3">
+                <div class="card-header">Other outcomes</div>
+                <div class="card-body">
+                    <form asp-action="SetStatus" asp-route-id="@f.FollowUpId" method="post" class="row g-2 align-items-end" id="statusForm">
+                        <div class="col-md-8">
+                            <label for="reason" class="form-label">Reason (optional)</label>
+                            <input id="reason" name="reason" class="form-control" maxlength="500" />
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button type="submit" name="status" value="Missed" class="btn btn-outline-danger flex-fill"
+                                    onclick="this.form.dataset.confirm='Mark this follow-up as missed?';this.form.dataset.confirmButton='Mark missed';">Missed</button>
+                            <button type="submit" name="status" value="Cancelled" class="btn btn-outline-secondary flex-fill"
+                                    onclick="this.form.dataset.confirm='Cancel this follow-up?';this.form.dataset.confirmButton='Cancel follow-up';">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+
+        <div class="card mb-3">
+            <div class="card-header">History</div>
+            <div class="card-body">
+                @if (Model.History.Count == 0)
+                {
+                    <p class="small text-body-secondary mb-0">No recorded changes.</p>
+                }
+                else
+                {
+                    <ul class="timeline">
+                        @foreach (var h in Model.History)
+                        {
+                            <li>
+                                <div><strong>@h.Action</strong> <span class="text-body-secondary">by @(h.UserName ?? "system")</span></div>
+                                @if (h.Action != AuditActions.Create && !string.IsNullOrEmpty(ChangeSummary(h.OldValue, h.NewValue)))
+                                {
+                                    <div class="small">@ChangeSummary(h.OldValue, h.NewValue)</div>
+                                }
+                                @if (!string.IsNullOrEmpty(h.Details))
+                                {
+                                    <div class="small">@h.Details</div>
+                                }
+                                <div class="meta">@DateTimeText(h.CreatedDate)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,40 @@
+@model LeadDeleteViewModel
+@{
+    ViewData["Title"] = "Delete lead";
+    var l = Model.Lead;
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Leads</a></li><li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@l.LeadId">@l.LeadCode</a></li><li class="breadcrumb-item active" aria-current="page">Delete</li></ol></nav>
+        <h1>Delete lead</h1>
+    </div>
+</div>
+<div class="card" style="max-width: 640px">
+    <div class="card-body">
+        <dl class="detail-list mb-3">
+            <dt>Lead</dt><dd>@l.LeadName (@l.LeadCode)</dd>
+            <dt>Company</dt><dd>@(l.CompanyName ?? "-")</dd>
+            <dt>Status</dt><dd>@StatusBadge(l.Status)</dd>
+        </dl>
+        @if (Model.Blocked)
+        {
+            <div class="alert alert-warning small mb-0" role="alert">Converted leads and leads linked to opportunities are kept for history and cannot be deleted.</div>
+        }
+        else
+        {
+            <div class="alert alert-danger small mb-0" role="alert">
+                The lead will be permanently deleted@(Model.FollowUps + Model.Activities > 0 ? $", together with {Model.FollowUps} follow-up(s) and {Model.Activities} activity record(s)" : "").
+                This cannot be undone.
+            </div>
+        }
+    </div>
+    <form asp-action="Delete" asp-route-id="@l.LeadId" method="post" data-confirm="Permanently delete @l.LeadName?" data-confirm-button="Delete">
+        <div class="form-actions">
+            <a asp-action="Details" asp-route-id="@l.LeadId" class="btn btn-light border">Cancel</a>
+            @if (!Model.Blocked)
+            {
+                <button type="submit" class="btn btn-danger">Delete lead</button>
+            }
+        </div>
+    </form>
+</div>

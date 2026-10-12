@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+src/AcxiomCRM/App_Data/*.db
+src/AcxiomCRM/App_Data/*.db-*
+__pycache__/
+test-screenshots/

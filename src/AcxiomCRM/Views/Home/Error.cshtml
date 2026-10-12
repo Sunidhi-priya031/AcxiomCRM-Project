@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Something went wrong";
+    if (User.Identity?.IsAuthenticated != true)
+    {
+        Layout = "_AuthLayout";
+    }
+}
+<div class="card mx-auto" style="max-width: 560px">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-exclamation-octagon fs-1 text-danger" aria-hidden="true"></i>
+        <h1 class="h5 fw-semibold mt-3">Something went wrong</h1>
+        <p class="text-body-secondary mb-4">The request could not be completed. Please try again. If the problem continues, contact your administrator.</p>
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">Back to dashboard</a>
+    </div>
+</div>

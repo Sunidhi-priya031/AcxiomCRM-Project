@@ -1,0 +1,24 @@
+@model List<ReportLink>
+@{
+    ViewData["Title"] = "Reports";
+}
+<div class="page-header">
+    <div>
+        <h1>Reports</h1>
+        <div class="subtitle">Every report shows only the records you are authorised to see and can be filtered, sorted, paged and exported to CSV.</div>
+    </div>
+</div>
+<div class="row g-3">
+    @foreach (var r in Model)
+    {
+        <div class="col-md-6 col-xl-4">
+            <a asp-action="@r.Action" class="card h-100 text-decoration-none text-body">
+                <div class="card-body">
+                    <h2 class="h6 fw-semibold mb-1">@r.Title</h2>
+                    <p class="small text-body-secondary mb-2">@r.Description</p>
+                    <span class="small text-body-tertiary"><i class="bi bi-person-lock me-1" aria-hidden="true"></i>@r.Access</span>
+                </div>
+            </a>
+        </div>
+    }
+</div>

@@ -1,0 +1,23 @@
+@model FollowUpFormViewModel
+@{
+    ViewData["Title"] = "Schedule follow-up";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Follow-ups</a></li><li class="breadcrumb-item active" aria-current="page">New</li></ol></nav>
+        <h1>Schedule follow-up</h1>
+        <div class="subtitle">New follow-ups are created as Planned and can't be dated earlier than today.</div>
+    </div>
+</div>
+<div class="card" style="max-width: 900px">
+    <form asp-action="Create" method="post" novalidate>
+        <partial name="_Form" model="Model" />
+        <div class="form-actions">
+            <a asp-action="Index" class="btn btn-light border">Cancel</a>
+            <button type="submit" class="btn btn-primary">Schedule</button>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

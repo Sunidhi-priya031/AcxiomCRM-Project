@@ -1,0 +1,23 @@
+@model OpportunityFormViewModel
+@{
+    ViewData["Title"] = "Edit opportunity";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Opportunities</a></li><li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.OpportunityId">@Model.OpportunityName</a></li><li class="breadcrumb-item active" aria-current="page">Edit</li></ol></nav>
+        <h1>Edit opportunity</h1>
+        <div class="subtitle">Choosing Won or Lost closes the opportunity; it can't be edited afterwards.</div>
+    </div>
+</div>
+<div class="card" style="max-width: 900px">
+    <form asp-action="Edit" asp-route-id="@Model.OpportunityId" method="post" novalidate>
+        <partial name="_Form" model="Model" />
+        <div class="form-actions">
+            <a asp-action="Details" asp-route-id="@Model.OpportunityId" class="btn btn-light border">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save changes</button>
+        </div>
+    </form>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

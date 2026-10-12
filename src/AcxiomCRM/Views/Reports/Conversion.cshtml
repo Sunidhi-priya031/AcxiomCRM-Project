@@ -1,0 +1,74 @@
+@model ConversionReport
+@{
+    ViewData["Title"] = "Conversion Report";
+    var header = new ReportHeaderView
+    {
+        Title = "Conversion Report",
+        Description = "Leads converted vs not converted, and opportunity outcomes (win rate = won / (won + lost)).",
+        Summary = Model.Summary,
+        Exports =
+        {
+            ("By owner CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["table"] = "owner", ["page"] = null })),
+            ("By source CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["table"] = "source", ["page"] = null }))
+        }
+    };
+    var filters = new ReportFilterView { Filter = Model.Filter, Owners = Model.Owners };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+
+<div class="card mb-3">
+    <div class="card-header">By owner</div>
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr>
+                    <th>@Html.SortLink("Owner", "owner")</th><th class="text-end">Leads</th><th class="text-end">Converted</th><th class="text-end">Not converted</th>
+                    <th class="text-end">@Html.SortLink("Conversion %", "rate")</th><th class="text-end">Won</th><th class="text-end">Lost</th><th class="text-end">Open</th>
+                    <th class="text-end">@Html.SortLink("Win rate %", "winrate")</th><th class="text-end">@Html.SortLink("Won amount", "won")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.ByOwner.Items)
+                {
+                    <tr>
+                        <td>@r.Owner</td>
+                        <td class="text-end">@r.Leads</td>
+                        <td class="text-end">@r.Converted</td>
+                        <td class="text-end">@r.NotConverted</td>
+                        <td class="text-end">@r.ConversionRate%</td>
+                        <td class="text-end">@r.Won</td>
+                        <td class="text-end">@r.Lost</td>
+                        <td class="text-end">@r.Open</td>
+                        <td class="text-end">@r.WinRate%</td>
+                        <td class="text-end">@Money(r.WonAmount)</td>
+                    </tr>
+                }
+                @if (Model.ByOwner.TotalCount == 0)
+                {
+                    <tr><td colspan="10" class="empty-state">No data in this period.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.ByOwner, "owners")" />
+</div>
+
+<div class="card" style="max-width: 720px">
+    <div class="card-header">By lead source</div>
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead><tr><th>Source</th><th class="text-end">Leads</th><th class="text-end">Converted</th><th class="text-end">Conversion %</th></tr></thead>
+            <tbody>
+                @foreach (var r in Model.BySource)
+                {
+                    <tr><td>@r.Source</td><td class="text-end">@r.Leads</td><td class="text-end">@r.Converted</td><td class="text-end">@r.ConversionRate%</td></tr>
+                }
+                @if (Model.BySource.Count == 0)
+                {
+                    <tr><td colspan="4" class="empty-state">No leads in this period.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

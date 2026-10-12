@@ -1,0 +1,51 @@
+@model ReportPage<FollowUpReportRow>
+@{
+    ViewData["Title"] = Model.Title;
+    var header = new ReportHeaderView
+    {
+        Title = Model.Title,
+        Description = Model.Description,
+        Summary = Model.Summary,
+        Exports = { ("Export CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["page"] = null })) }
+    };
+    var filters = new ReportFilterView
+    {
+        Filter = Model.Filter,
+        Owners = Model.Owners,
+        DateLabel = "Follow-up date",
+        Statuses = Enum.GetNames<FollowUpStatus>().Append("Overdue").ToArray()
+    };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr>
+                    <th>@Html.SortLink("Date", "date")</th><th>Subject</th><th>Type</th><th>Related to</th>
+                    <th>@Html.SortLink("Status", "status")</th><th>@Html.SortLink("Owner", "owner")</th><th>Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap @(r.Overdue ? "text-danger" : "")">@DateTimeText(r.Date)</td>
+                        <td><a asp-controller="FollowUps" asp-action="Details" asp-route-id="@r.Id">@r.Subject</a></td>
+                        <td>@r.Type</td>
+                        <td>@r.RelatedName<span class="cell-sub">@r.RelatedType</span></td>
+                        <td>@StatusBadge(r.Status) @if (r.Overdue) { @StatusBadge("Overdue") }</td>
+                        <td>@r.Owner</td>
+                        <td class="text-nowrap">@DateTimeText(r.CompletedDate)</td>
+                    </tr>
+                }
+                @if (Model.Rows.TotalCount == 0)
+                {
+                    <tr><td colspan="7" class="empty-state">No follow-ups match the filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Rows, "follow-ups")" />
+</div>

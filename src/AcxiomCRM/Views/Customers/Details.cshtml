@@ -1,0 +1,184 @@
+@model CustomerDetailsViewModel
+@{
+    var c = Model.Customer;
+    ViewData["Title"] = c.CustomerName;
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Customers</a></li><li class="breadcrumb-item active" aria-current="page">@c.CustomerCode</li></ol></nav>
+        <h1>@c.CustomerName <span class="ms-1 align-middle">@StatusBadge(c.Status)</span></h1>
+        <div class="subtitle">@(c.CompanyName ?? "Individual customer") · Owner: @c.AssignedToUser?.FullName</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@c.CustomerId" class="btn btn-light border"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Schedule follow-up</a>
+        <a asp-controller="Activities" asp-action="Create" asp-route-customerId="@c.CustomerId" class="btn btn-light border"><i class="bi bi-plus-circle me-1" aria-hidden="true"></i>Log activity</a>
+        @if (c.Status == CustomerStatus.Active)
+        {
+            <a asp-controller="Opportunities" asp-action="Create" asp-route-customerId="@c.CustomerId" class="btn btn-light border"><i class="bi bi-briefcase me-1" aria-hidden="true"></i>New opportunity</a>
+        }
+        <a asp-action="Edit" asp-route-id="@c.CustomerId" class="btn btn-primary"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Edit</a>
+        @if (Model.CanDelete)
+        {
+            <a asp-action="Delete" asp-route-id="@c.CustomerId" class="btn btn-outline-danger"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete</a>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-xl-4">
+        <div class="card mb-3">
+            <div class="card-header">Customer details</div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <dt>Code</dt><dd>@c.CustomerCode</dd>
+                    <dt>Email</dt><dd><a href="mailto:@c.Email">@c.Email</a></dd>
+                    <dt>Phone</dt><dd>@c.Phone</dd>
+                    <dt>Company</dt><dd>@(c.CompanyName ?? "-")</dd>
+                    <dt>Address</dt><dd>@(c.Address ?? "-")</dd>
+                    <dt>City / State</dt><dd>@(c.City ?? "-") / @(c.State ?? "-")</dd>
+                    <dt>Owner</dt><dd>@c.AssignedToUser?.FullName</dd>
+                    <dt>Created</dt><dd>@DateTimeText(c.CreatedDate) by @c.CreatedByUser?.FullName</dd>
+                    <dt>Modified</dt><dd>@DateTimeText(c.ModifiedDate)</dd>
+                    @if (Model.SourceLeads.Count > 0)
+                    {
+                        <dt>Converted from</dt>
+                        <dd>@foreach (var l in Model.SourceLeads)
+                            {
+                                <a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId" class="d-block">@l.LeadCode – @l.LeadName</a>
+                            }</dd>
+                    }
+                </dl>
+                @if (!string.IsNullOrEmpty(c.Notes))
+                {
+                    <hr />
+                    <div class="small text-body-secondary mb-1">Notes</div>
+                    <p class="mb-0" style="white-space: pre-line">@c.Notes</p>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Change history</div>
+            <div class="card-body">
+                @if (Model.History.Count == 0)
+                {
+                    <p class="small text-body-secondary mb-0">No recorded changes.</p>
+                }
+                else
+                {
+                    <ul class="timeline">
+                        @foreach (var h in Model.History)
+                        {
+                            <li>
+                                <div><strong>@h.Action</strong> <span class="text-body-secondary">by @(h.UserName ?? "system")</span></div>
+                                @if (!string.IsNullOrEmpty(ChangeSummary(h.OldValue, h.NewValue)) && h.Action != AuditActions.Create)
+                                {
+                                    <div class="small">@ChangeSummary(h.OldValue, h.NewValue)</div>
+                                }
+                                @if (!string.IsNullOrEmpty(h.Details))
+                                {
+                                    <div class="small">@h.Details</div>
+                                }
+                                <div class="meta">@DateTimeText(h.CreatedDate)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Opportunities (@Model.Opportunities.Count)</span>
+                <a asp-controller="Opportunities" asp-action="Index" asp-route-customerId="@c.CustomerId" class="small fw-normal">Open list</a>
+            </div>
+            @if (Model.Opportunities.Count == 0)
+            {
+                <div class="empty-state py-4">No opportunities yet.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-crm">
+                        <thead><tr><th>Opportunity</th><th>Stage</th><th class="text-end">Amount</th><th class="text-end">Prob.</th><th>Expected close</th><th>Owner</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.Opportunities)
+                            {
+                                <tr>
+                                    <td><a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a></td>
+                                    <td>@StatusBadge(o.Stage)</td>
+                                    <td class="text-end">@Money(o.Amount)</td>
+                                    <td class="text-end">@o.Probability%</td>
+                                    <td>@Date(o.ExpectedCloseDate)</td>
+                                    <td>@o.AssignedToUser?.FullName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Follow-ups (@Model.FollowUps.Count)</span>
+                <a asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@c.CustomerId" class="small fw-normal">Schedule</a>
+            </div>
+            @if (Model.FollowUps.Count == 0)
+            {
+                <div class="empty-state py-4">No follow-ups.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-crm">
+                        <thead><tr><th>Date</th><th>Subject</th><th>Type</th><th>Status</th><th>Owner</th></tr></thead>
+                        <tbody>
+                            @foreach (var f in Model.FollowUps)
+                            {
+                                <tr>
+                                    <td class="text-nowrap">@DateTimeText(f.FollowUpDate)</td>
+                                    <td><a asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.FollowUpId">@f.Subject</a></td>
+                                    <td>@f.FollowUpType</td>
+                                    <td>@StatusBadge(f.Status) @if (f.IsOverdue) { @StatusBadge("Overdue") }</td>
+                                    <td>@f.AssignedToUser?.FullName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Activities (@Model.Activities.Count)</span>
+                <a asp-controller="Activities" asp-action="Create" asp-route-customerId="@c.CustomerId" class="small fw-normal">Log activity</a>
+            </div>
+            @if (Model.Activities.Count == 0)
+            {
+                <div class="empty-state py-4">No activities logged.</div>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush small">
+                    @foreach (var a in Model.Activities)
+                    {
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between gap-2">
+                                <span><i class="bi @ActivityIcon(a.ActivityType) me-2 text-body-secondary" aria-hidden="true"></i><a asp-controller="Activities" asp-action="Edit" asp-route-id="@a.ActivityId">@a.Subject</a> @StatusBadge(a.Status)</span>
+                                <span class="text-body-secondary text-nowrap">@DateTimeText(a.ActivityDate) · @a.AssignedToUser?.FullName</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(a.Description))
+                            {
+                                <div class="text-body-secondary mt-1">@a.Description</div>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

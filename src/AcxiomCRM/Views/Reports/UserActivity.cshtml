@@ -1,0 +1,52 @@
+@model ReportPage<UserActivityRow>
+@{
+    ViewData["Title"] = Model.Title;
+    var header = new ReportHeaderView
+    {
+        Title = Model.Title,
+        Description = Model.Description,
+        Summary = Model.Summary,
+        Exports = { ("Export CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["page"] = null })) }
+    };
+    var filters = new ReportFilterView { Filter = Model.Filter, Owners = Model.Owners, DateLabel = "Event date", OwnerParam = "userId" };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr>
+                    <th>@Html.SortLink("User", "user")</th><th>Role</th><th class="text-end">@Html.SortLink("Logins", "logins")</th><th class="text-end">Failed</th>
+                    <th class="text-end">Creates</th><th class="text-end">Updates</th><th class="text-end">Deletes</th><th class="text-end">Other</th>
+                    <th class="text-end">@Html.SortLink("Total", "total")</th><th class="text-end">@Html.SortLink("Activities", "activities")</th>
+                    <th class="text-end">Follow-ups done</th><th>Last login</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows.Items)
+                {
+                    <tr>
+                        <td>@r.User</td>
+                        <td>@r.Role</td>
+                        <td class="text-end">@r.Logins</td>
+                        <td class="text-end @(r.FailedLogins > 0 ? "text-danger" : "")">@r.FailedLogins</td>
+                        <td class="text-end">@r.Creates</td>
+                        <td class="text-end">@r.Updates</td>
+                        <td class="text-end">@r.Deletes</td>
+                        <td class="text-end">@r.Other</td>
+                        <td class="text-end fw-semibold">@r.Total</td>
+                        <td class="text-end">@r.ActivitiesLogged</td>
+                        <td class="text-end">@r.FollowUpsCompleted</td>
+                        <td class="text-nowrap">@DateTimeText(r.LastLogin)</td>
+                    </tr>
+                }
+                @if (Model.Rows.TotalCount == 0)
+                {
+                    <tr><td colspan="12" class="empty-state">No users in scope.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Rows, "users")" />
+</div>

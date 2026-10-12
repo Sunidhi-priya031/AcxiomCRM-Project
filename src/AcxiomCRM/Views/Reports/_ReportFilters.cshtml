@@ -1,0 +1,107 @@
+@model ReportFilterView
+@{
+    var f = Model.Filter;
+    var ownerValue = Model.OwnerParam == "userId" ? f.UserId : f.AssignedTo;
+}
+<form method="get" class="filter-bar" role="search" aria-label="Report filters">
+    <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="from">@Model.DateLabel from</label>
+            <input type="date" id="from" name="from" value="@f.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-3 col-lg-2">
+            <label class="form-label" for="to">@Model.DateLabel to</label>
+            <input type="date" id="to" name="to" value="@f.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        @if (Model.ShowOwner)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="owner">@(Model.OwnerParam == "userId" ? "User" : "Owner")</label>
+                <select id="owner" name="@Model.OwnerParam" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var u in Model.Owners)
+                    {
+                        <option value="@u.Id" selected="@(ownerValue == u.Id)">@u.FullName</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.Statuses != null)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="status">@Model.StatusLabel</label>
+                <select id="status" name="status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Statuses)
+                    {
+                        <option value="@s" selected="@(f.Status == s)">@s</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.Stages != null)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="stage">Stage</label>
+                <select id="stage" name="stage" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Stages)
+                    {
+                        <option value="@s" selected="@(f.Stage == s)">@s</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.Sources != null)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="source">Source</label>
+                <select id="source" name="source" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Sources)
+                    {
+                        <option value="@s" selected="@(f.Source == s)">@(Enum.TryParse<LeadSource>(s, out var ls) ? ls.GetDisplayName() : s)</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.Entities != null)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="entity">Module</label>
+                <select id="entity" name="entity" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Entities)
+                    {
+                        <option value="@s" selected="@(f.Entity == s)">@s</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.Actions != null)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="action">Action</label>
+                <select id="action" name="action" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    @foreach (var s in Model.Actions)
+                    {
+                        <option value="@s" selected="@(f.Action == s)">@s</option>
+                    }
+                </select>
+            </div>
+        }
+        @if (Model.ShowSearch)
+        {
+            <div class="col-6 col-md-3 col-lg-2">
+                <label class="form-label" for="q">Search</label>
+                <input type="search" id="q" name="q" value="@f.Q" class="form-control form-control-sm" placeholder="@Model.SearchPlaceholder" />
+            </div>
+        }
+        <div class="col-auto d-flex gap-2">
+            <input type="hidden" name="sort" value="@f.Sort" />
+            <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+            <a href="@ViewContext.HttpContext.Request.Path" class="btn btn-sm btn-light border">Reset</a>
+        </div>
+    </div>
+</form>

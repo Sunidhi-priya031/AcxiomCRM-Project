@@ -1,0 +1,125 @@
+@model LeadIndexViewModel
+@{
+    ViewData["Title"] = "Leads";
+    var s = Model.Search;
+}
+<div class="page-header">
+    <div>
+        <h1>Leads</h1>
+        <div class="subtitle">Prospects being qualified for conversion</div>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New lead</a>
+</div>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter leads">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4 col-lg-3">
+            <label class="form-label" for="q">Search</label>
+            <input type="search" id="q" name="q" value="@s.Q" class="form-control form-control-sm" placeholder="Lead name, company, email or code" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All</option>
+                @foreach (var st in Enum.GetValues<LeadStatus>())
+                {
+                    <option value="@st" selected="@(s.Status == st)">@st</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="source">Source</label>
+            <select id="source" name="source" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All</option>
+                @foreach (var src in Enum.GetValues<LeadSource>())
+                {
+                    <option value="@src" selected="@(s.Source == src)">@src.GetDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2 col-lg-1">
+            <label class="form-label" for="priority">Priority</label>
+            <select id="priority" name="priority" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All</option>
+                @foreach (var p in Enum.GetValues<LeadPriority>())
+                {
+                    <option value="@p" selected="@(s.Priority == p)">@p</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="assignedTo">Assigned to</label>
+            <select id="assignedTo" name="assignedTo" class="form-select form-select-sm" data-autosubmit>
+                <option value="">All users</option>
+                @foreach (var u in Model.Owners)
+                {
+                    <option value="@u.Id" selected="@(s.AssignedTo == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-12 col-lg-2 d-flex gap-2">
+            <input type="hidden" name="sort" value="@s.Sort" />
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Search</button>
+            <a asp-action="Index" class="btn btn-sm btn-light border">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Results.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-funnel" aria-hidden="true"></i>No leads match your filters.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>@Html.SortLink("Lead", "name")</th>
+                        <th>@Html.SortLink("Company", "company")</th>
+                        <th>Source</th>
+                        <th>@Html.SortLink("Status", "status")</th>
+                        <th>Priority</th>
+                        <th class="text-end">@Html.SortLink("Expected value", "value")</th>
+                        <th>Assigned to</th>
+                        <th>@Html.SortLink("Created", "created")</th>
+                        <th class="text-end"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap text-body-secondary">@l.LeadCode</td>
+                            <td><a asp-action="Details" asp-route-id="@l.LeadId" class="fw-medium">@l.LeadName</a><span class="cell-sub">@(l.Email ?? l.Phone)</span></td>
+                            <td>@(l.CompanyName ?? "-")</td>
+                            <td>@l.Source.GetDisplayName()</td>
+                            <td>@StatusBadge(l.Status)</td>
+                            <td>@StatusBadge(l.Priority)</td>
+                            <td class="text-end">@Money(l.ExpectedValue)</td>
+                            <td>@l.AssignedToUser?.FullName</td>
+                            <td class="text-nowrap">@Date(l.CreatedDate)</td>
+                            <td class="text-end text-nowrap">
+                                @if (l.Status == LeadStatus.Qualified)
+                                {
+                                    <a asp-action="Convert" asp-route-id="@l.LeadId" class="btn btn-sm btn-outline-primary">Convert</a>
+                                }
+                                @if (l.Status != LeadStatus.Converted)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@l.LeadId" class="btn btn-sm btn-light border" aria-label="Edit @l.LeadName"><i class="bi bi-pencil" aria-hidden="true"></i></a>
+                                }
+                                @if (Model.CanDelete && l.Status != LeadStatus.Converted)
+                                {
+                                    <a asp-action="Delete" asp-route-id="@l.LeadId" class="btn btn-sm btn-light border text-danger" aria-label="Delete @l.LeadName"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Results, "leads")' />
+</div>

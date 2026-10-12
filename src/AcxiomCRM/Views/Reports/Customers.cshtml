@@ -1,0 +1,53 @@
+@model ReportPage<CustomerReportRow>
+@{
+    ViewData["Title"] = Model.Title;
+    var header = new ReportHeaderView
+    {
+        Title = Model.Title,
+        Description = Model.Description,
+        Summary = Model.Summary,
+        Exports = { ("Export CSV", Html.UrlWith(new Dictionary<string, string?> { ["export"] = "csv", ["page"] = null })) }
+    };
+    var filters = new ReportFilterView
+    {
+        Filter = Model.Filter,
+        Owners = Model.Owners,
+        Statuses = Enum.GetNames<CustomerStatus>(),
+        ShowSearch = true,
+        SearchPlaceholder = "Customer or company"
+    };
+}
+<partial name="_ReportHeader" model="header" />
+<partial name="_ReportFilters" model="filters" />
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-crm">
+            <thead>
+                <tr>
+                    <th>Code</th><th>@Html.SortLink("Customer", "name")</th><th>Company</th><th>Email / Phone</th><th>City</th>
+                    <th>@Html.SortLink("Status", "status")</th><th>@Html.SortLink("Owner", "owner")</th><th>@Html.SortLink("Created", "created")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model.Rows.Items)
+                {
+                    <tr>
+                        <td class="text-body-secondary">@r.Code</td>
+                        <td><a asp-controller="Customers" asp-action="Details" asp-route-id="@r.Id">@r.Name</a></td>
+                        <td>@(r.Company ?? "-")</td>
+                        <td>@r.Email<span class="cell-sub">@r.Phone</span></td>
+                        <td>@(r.City ?? "-")</td>
+                        <td>@StatusBadge(r.Status)</td>
+                        <td>@r.Owner</td>
+                        <td class="text-nowrap">@Date(r.CreatedDate)</td>
+                    </tr>
+                }
+                @if (Model.Rows.TotalCount == 0)
+                {
+                    <tr><td colspan="8" class="empty-state">No customers match the filters.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <partial name="_Pager" model="@PagerModel.From(Model.Rows, "customers")" />
+</div>

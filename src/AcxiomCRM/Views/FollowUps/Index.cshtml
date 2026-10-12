@@ -1,0 +1,107 @@
+@model FollowUpIndexViewModel
+@{
+    ViewData["Title"] = "Follow-Ups";
+    var s = Model.Search;
+    var view = s.View ?? "all";
+    string Tab(string key) => view == key ? "active" : "";
+}
+<div class="page-header">
+    <div>
+        <h1>Follow-ups</h1>
+        <div class="subtitle">Scheduled calls, emails, meetings and visits</div>
+    </div>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-calendar-plus me-1" aria-hidden="true"></i>Schedule follow-up</a>
+</div>
+
+<ul class="nav nav-pills mb-3 small gap-1" aria-label="Follow-up views">
+    <li class="nav-item"><a class="nav-link @Tab("all")" href="@Html.UrlWith(new Dictionary<string, string?> { ["view"] = null, ["page"] = null })">All</a></li>
+    <li class="nav-item"><a class="nav-link @Tab("pending")" href="@Html.UrlWith(new Dictionary<string, string?> { ["view"] = "pending", ["page"] = null })">Pending <span class="badge text-bg-light border ms-1">@Model.PendingCount</span></a></li>
+    <li class="nav-item"><a class="nav-link @Tab("today")" href="@Html.UrlWith(new Dictionary<string, string?> { ["view"] = "today", ["page"] = null })">Today <span class="badge text-bg-light border ms-1">@Model.TodayCount</span></a></li>
+    <li class="nav-item"><a class="nav-link @Tab("upcoming")" href="@Html.UrlWith(new Dictionary<string, string?> { ["view"] = "upcoming", ["page"] = null })">Upcoming <span class="badge text-bg-light border ms-1">@Model.UpcomingCount</span></a></li>
+    <li class="nav-item"><a class="nav-link @Tab("overdue")" href="@Html.UrlWith(new Dictionary<string, string?> { ["view"] = "overdue", ["page"] = null })">Overdue <span class="badge @(Model.OverdueCount > 0 ? "text-bg-danger" : "text-bg-light border") ms-1">@Model.OverdueCount</span></a></li>
+</ul>
+
+<form method="get" class="filter-bar" role="search" aria-label="Filter follow-ups">
+    <input type="hidden" name="view" value="@s.View" />
+    <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" for="related">Related customer / lead</label>
+            <input type="search" id="related" name="related" value="@s.Related" class="form-control form-control-sm" placeholder="Name or subject" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="from">From</label>
+            <input type="date" id="from" name="from" value="@s.From?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="to">To</label>
+            <input type="date" id="to" name="to" value="@s.To?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="status">Status</label>
+            <select id="status" name="status" class="form-select form-select-sm">
+                <option value="">All</option>
+                @foreach (var st in Enum.GetValues<FollowUpStatus>())
+                {
+                    <option value="@st" selected="@(s.Status == st)">@st</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label" for="assignedTo">Assigned to</label>
+            <select id="assignedTo" name="assignedTo" class="form-select form-select-sm">
+                <option value="">All users</option>
+                @foreach (var u in Model.Owners)
+                {
+                    <option value="@u.Id" selected="@(s.AssignedTo == u.Id)">@u.FullName</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-1 d-flex gap-2">
+            <button type="submit" class="btn btn-sm btn-primary" aria-label="Apply filters"><i class="bi bi-search" aria-hidden="true"></i></button>
+            <a asp-action="Index" class="btn btn-sm btn-light border" aria-label="Reset filters"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    @if (Model.Results.TotalCount == 0)
+    {
+        <div class="empty-state"><i class="bi bi-calendar2-check" aria-hidden="true"></i>No follow-ups found.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-crm">
+                <thead>
+                    <tr>
+                        <th>@Html.SortLink("Date", "date")</th>
+                        <th>@Html.SortLink("Subject", "subject")</th>
+                        <th>@Html.SortLink("Type", "type")</th>
+                        <th>Related to</th>
+                        <th>@Html.SortLink("Status", "status")</th>
+                        <th>Assigned to</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var f in Model.Results.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap @(f.IsOverdue ? "text-danger" : "")">@DateTimeText(f.FollowUpDate)</td>
+                            <td><a asp-action="Details" asp-route-id="@f.FollowUpId" class="fw-medium">@f.Subject</a></td>
+                            <td><i class="bi @FollowUpIcon(f.FollowUpType) me-1 text-body-secondary" aria-hidden="true"></i>@f.FollowUpType</td>
+                            <td>
+                                @if (f.Customer != null) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@f.CustomerId">@f.Customer.CustomerName</a> }
+                                else if (f.Lead != null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@f.LeadId">@f.Lead.LeadName</a> }
+                                else if (f.Opportunity != null) { <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@f.OpportunityId">@f.Opportunity.OpportunityName</a> }
+                                <span class="cell-sub">@f.RelatedType</span>
+                            </td>
+                            <td>@StatusBadge(f.Status) @if (f.IsOverdue) { @StatusBadge("Overdue") }</td>
+                            <td>@f.AssignedToUser?.FullName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <partial name="_Pager" model='PagerModel.From(Model.Results, "follow-ups")' />
+</div>

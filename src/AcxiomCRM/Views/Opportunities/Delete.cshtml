@@ -1,0 +1,30 @@
+@model Opportunity
+@{
+    ViewData["Title"] = "Delete opportunity";
+    var followUps = (int)(ViewBag.FollowUps ?? 0);
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb small mb-1"><li class="breadcrumb-item"><a asp-action="Index">Opportunities</a></li><li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.OpportunityId">@Model.OpportunityName</a></li><li class="breadcrumb-item active" aria-current="page">Delete</li></ol></nav>
+        <h1>Delete opportunity</h1>
+    </div>
+</div>
+<div class="card" style="max-width: 640px">
+    <div class="card-body">
+        <dl class="detail-list mb-3">
+            <dt>Opportunity</dt><dd>@Model.OpportunityName</dd>
+            <dt>Customer</dt><dd>@Model.Customer?.CustomerName</dd>
+            <dt>Amount</dt><dd>@Money(Model.Amount)</dd>
+            <dt>Stage</dt><dd>@StatusBadge(Model.Stage)</dd>
+        </dl>
+        <div class="alert alert-danger small mb-0" role="alert">
+            The opportunity will be permanently deleted@(followUps > 0 ? $" together with {followUps} follow-up(s)" : ""). This cannot be undone.
+        </div>
+    </div>
+    <form asp-action="Delete" asp-route-id="@Model.OpportunityId" method="post" data-confirm="Permanently delete this opportunity?" data-confirm-button="Delete">
+        <div class="form-actions">
+            <a asp-action="Details" asp-route-id="@Model.OpportunityId" class="btn btn-light border">Cancel</a>
+            <button type="submit" class="btn btn-danger">Delete opportunity</button>
+        </div>
+    </form>
+</div>

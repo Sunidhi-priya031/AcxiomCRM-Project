@@ -1,0 +1,24 @@
+@model int
+@{
+    var (title, text, icon) = Model switch
+    {
+        404 => ("Page not found", "The page or record you asked for doesn't exist or has been removed.", "bi-search"),
+        403 => ("Access denied", "You are not authorised to view this page.", "bi-shield-lock"),
+        429 => ("Too many attempts", "Please wait a minute before trying again.", "bi-hourglass-split"),
+        400 => ("Bad request", "The request was not valid. Please go back and try again.", "bi-exclamation-circle"),
+        _ => ("Request failed", "The request could not be completed.", "bi-exclamation-circle")
+    };
+    ViewData["Title"] = title;
+    if (User.Identity?.IsAuthenticated != true)
+    {
+        Layout = "_AuthLayout";
+    }
+}
+<div class="card mx-auto" style="max-width: 560px">
+    <div class="card-body text-center py-5">
+        <i class="bi @icon fs-1 text-body-tertiary" aria-hidden="true"></i>
+        <h1 class="h5 fw-semibold mt-3">@title</h1>
+        <p class="text-body-secondary mb-4">@text</p>
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary">Back to dashboard</a>
+    </div>
+</div>
