@@ -59,4 +59,6 @@ public class AdminStats
     public int LoginsToday { get; set; }
     public int FailedLoginsToday { get; set; }
     public List<AuditLog> RecentSecurityEvents { get; set; } = new();
+    public List<AuditLog> RecentAuditEntries { get; set; } = new();
+    public int AuditEventsToday { get; set; }
 }

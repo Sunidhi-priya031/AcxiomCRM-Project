@@ -186,6 +186,41 @@
             </div>
         }
 
+        @if (Model.Admin != null)
+        {
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Recent audit log <span class="text-body-secondary fw-normal small">@Model.Admin.AuditEventsToday event(s) today</span></span>
+                    <a asp-controller="AuditLogs" asp-action="Index" class="small fw-normal">View full audit log</a>
+                </div>
+                @if (Model.Admin.RecentAuditEntries.Count == 0)
+                {
+                    <div class="empty-state py-4"><i class="bi bi-journal-text" aria-hidden="true"></i>No audit events recorded yet.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-crm">
+                            <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Module</th><th>Record</th><th>Result</th></tr></thead>
+                            <tbody>
+                                @foreach (var a in Model.Admin.RecentAuditEntries)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap"><a asp-controller="AuditLogs" asp-action="Details" asp-route-id="@a.AuditLogId">@a.CreatedDate.ToString("dd MMM, HH:mm")</a></td>
+                                        <td class="text-truncate" style="max-width: 180px">@(a.UserName ?? "-")</td>
+                                        <td>@a.Action</td>
+                                        <td>@a.EntityName</td>
+                                        <td class="text-body-secondary">@(a.EntityName == AuditEntities.Account || a.EntityName == AuditEntities.User ? "" : a.RecordId)</td>
+                                        <td>@StatusBadge(a.Result)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+
         @if (Model.RecentActivities.Count > 0)
         {
             <div class="card mb-3">

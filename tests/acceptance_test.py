@@ -345,6 +345,9 @@ def main():
     # ------------------------------------------------------------------ 11. admin
     for path in ["/Users", "/Users/Create", "/Roles", "/AuditLogs", "/Reports/Audit", "/Reports/UserActivity"]:
         check(f"11. Admin can open {path}", admin.get(path).status_code == 200)
+    adash = admin.get("/Dashboard").text
+    check("11. Admin dashboard shows the recent audit log panel", "Recent audit log" in adash and "/AuditLogs/Details/" in adash)
+    check("Non-admin dashboard does not show the audit log panel", "Recent audit log" not in sales.get("/Dashboard").text)
     admin_all = admin.api("GET", "/api/customers", params={"pageSize": 1}).json()["totalCount"]
     check("11. Admin sees all customers", admin_all >= len(all_customers))
 

@@ -144,7 +144,11 @@ public class DashboardService
                     (a.Action == AuditActions.LoginFailed || a.Action == AuditActions.Lockout) && a.CreatedDate >= today),
                 RecentSecurityEvents = await _db.AuditLogs.AsNoTracking()
                     .Where(a => a.EntityName == AuditEntities.Account || a.EntityName == AuditEntities.User)
-                    .OrderByDescending(a => a.AuditLogId).Take(6).ToListAsync()
+                    .OrderByDescending(a => a.AuditLogId).Take(6).ToListAsync(),
+                // Latest audit trail across every module (create, update, delete, conversions, logins...).
+                RecentAuditEntries = await _db.AuditLogs.AsNoTracking()
+                    .OrderByDescending(a => a.AuditLogId).Take(10).ToListAsync(),
+                AuditEventsToday = await _db.AuditLogs.CountAsync(a => a.CreatedDate >= today)
             };
         }
         else if (_user.IsSalesExecutive)
